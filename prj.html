@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GIKI Food - Web Portal</title>
+    <!-- Icons and Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- CSS STYLES --- */
+        :root {
+            --primary-dark: #0f172a; /* Dark Navy from screenshots */
+            --primary-red: #d50000;  /* JazzCash Red */
+            --accent-orange: #f97316; /* Menu Titles */
+            --bg-cream: #fffbf7;     /* Light cream bg from QR screen */
+            --text-dark: #1e293b;
+            --gray-light: #f1f5f9;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #e2e8f0; /* Desktop background */
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Phone Frame */
+        .phone-frame {
+            /* Reduced scale for better visibility on smaller screens */
+            width: 330px;  /* Reduced from 375px */
+            height: 700px; /* Reduced from 812px */
+            background: white;
+            border-radius: 35px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            position: relative;
+            overflow: hidden;
+            border: 8px solid #1e293b;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .notch {
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 120px; height: 25px; background: #1e293b;
+            border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;
+            z-index: 100;
+        }
+
+        /* Status Bar (Fake) */
+        .status-bar {
+            padding: 12px 20px 5px 20px;
+            display: flex; justify-content: space-between;
+            font-size: 0.75rem; font-weight: 600; color: #333;
+            margin-top: 5px;
+        }
+
+        /* --- SCREENS --- */
+        .screen {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            overflow-y: auto;
+            position: relative;
+            background: white;
+        }
+        .screen.active { display: flex; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* === SCREEN 1: LANDING (QR) === */
+        #screen-landing {
+            background-color: var(--bg-cream);
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+        }
+
+        .qr-card {
+            background: white;
+            padding: 30px; /* Reduced padding */
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            text-align: center;
+            margin-bottom: 30px;
+            border: 2px dashed #e2e8f0;
+        }
+
+        .qr-icon { font-size: 70px; color: var(--primary-dark); margin-bottom: 10px; }
+        
+        .btn-dark {
+            background: var(--primary-dark);
+            color: white;
+            width: 100%;
+            padding: 15px;
+            border-radius: 30px;
+            border: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* === SCREEN 2: MENU === */
+        .header-menu {
+            padding: 15px 20px 10px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .menu-title-sm { color: var(--accent-orange); font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; }
+        .menu-title-lg { font-size: 1.3rem; font-weight: 700; color: var(--primary-dark); }
+        .cart-icon-btn { position: relative; cursor: pointer; color: var(--primary-dark); font-size: 1.1rem; }
+
+        .menu-list { padding: 5px 20px; }
+        
+        .menu-item {
+            display: flex;
+            margin-bottom: 18px;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .menu-img {
+            width: 70px; height: 70px;
+            border-radius: 12px;
+            background-size: cover;
+            background-position: center;
+            background-color: #eee;
+        }
+
+        .menu-details { flex: 1; }
+        .item-name { font-weight: 700; color: var(--primary-dark); margin-bottom: 3px; font-size: 0.95rem; }
+        .item-desc { font-size: 0.7rem; color: #64748b; margin-bottom: 6px; }
+        .item-price { font-weight: 700; color: var(--primary-dark); font-size: 0.9rem; }
+        
+        .add-btn {
+            border: 1px solid var(--accent-orange);
+            color: var(--accent-orange);
+            background: white;
+            padding: 4px 18px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .sold-out {
+            background: #e2e8f0; color: #64748b; padding: 4px 10px;
+            border-radius: 5px; font-size: 0.65rem; font-weight: 600;
+        }
+
+        /* === SCREEN 3: CHECKOUT === */
+        .checkout-container { padding: 20px; }
+        
+        .location-card {
+            background: white; border: 1px solid #e2e8f0;
+            padding: 12px; border-radius: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 15px; font-weight: 600; color: var(--primary-dark); font-size: 0.9rem;
+        }
+
+        .bill-card {
+            background: white; border: 1px solid #e2e8f0;
+            border-radius: 15px; padding: 18px;
+            margin-bottom: 15px;
+        }
+        
+        .bill-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.85rem; }
+        .bill-row.total { border-top: 1px solid #e2e8f0; padding-top: 12px; font-weight: 700; font-size: 1rem; margin-bottom: 0; }
+        .qty-badge { background: #ffedd5; color: var(--accent-orange); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; margin-right: 8px; font-weight: 600; }
+
+        .input-group { margin-bottom: 20px; }
+        .input-label { font-size: 0.75rem; color: #64748b; margin-bottom: 6px; display: block; }
+        .phone-input {
+            width: 100%; padding: 12px; border: 1px solid #e2e8f0;
+            border-radius: 10px; font-family: inherit; font-size: 0.9rem;
+            box-sizing: border-box;
+        }
+
+        .btn-red {
+            background: var(--primary-red); color: white;
+            width: 100%; padding: 15px; border-radius: 12px;
+            border: none; font-size: 0.95rem; font-weight: 700;
+            cursor: pointer; box-shadow: 0 4px 15px rgba(213, 0, 0, 0.3);
+        }
+
+        /* === POPUP (UPSSELL) === */
+        .popup-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 200;
+            display: none; align-items: flex-end; /* Bottom sheet style */
+        }
+        .popup-card {
+            background: var(--primary-dark);
+            width: 100%; padding: 25px 20px;
+            border-top-left-radius: 25px; border-top-right-radius: 25px;
+            color: white;
+            animation: slideUp 0.3s ease-out;
+            box-sizing: border-box; /* Ensure padding doesn't cause overflow */
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        .feature-list { list-style: none; padding: 0; margin: 20px 0; }
+        .feature-list li { margin-bottom: 10px; font-size: 0.9rem; color: #cbd5e1; display: flex; gap: 10px; }
+        
+        .popup-actions { display: flex; gap: 15px; margin-top: 25px; }
+        .btn-white { background: white; color: var(--primary-dark); flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; }
+        .btn-outline { border: 1px solid #475569; color: white; background: transparent; flex: 1; padding: 12px; border-radius: 10px; font-weight: 500; cursor: pointer; }
+
+    </style>
+</head>
+<body>
+
+    <div class="phone-frame">
+        <div class="notch"></div>
+        
+        <!-- Top Status Bar (Cosmetic) -->
+        <div class="status-bar">
+            <span>9:41</span>
+            <span><i class="fas fa-signal"></i> <i class="fas fa-wifi"></i> <i class="fas fa-battery-full"></i></span>
+        </div>
+
+        <!-- SCREEN 1: QR LANDING -->
+        <div id="screen-landing" class="screen active">
+            <div class="qr-card">
+                <i class="fas fa-qrcode qr-icon"></i>
+                <div style="color: var(--primary-dark); font-weight: 600; margin-top: 10px;">Scan to Order</div>
+            </div>
+
+            <div style="text-align: center; margin-bottom: 40px;">
+                <h2 style="margin: 0; color: var(--primary-dark);">GIKI Food</h2>
+                <p style="color: #64748b; font-size: 0.9rem;">Skip the queue! Instant web menu.</p>
+            </div>
+
+            <button class="btn-dark" onclick="switchScreen('menu')">
+                Simulate Scan <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+
+        <!-- SCREEN 2: MENU LIST -->
+        <div id="screen-menu" class="screen">
+            <div class="header-menu">
+                <div>
+                    <div class="menu-title-sm">MENU</div>
+                    <div class="menu-title-lg">Hot n Spicy</div>
+                </div>
+                <div class="cart-icon-btn" onclick="switchScreen('checkout')">
+                    <i class="fas fa-shopping-bag"></i>
+                </div>
+            </div>
+
+            <div class="menu-list">
+                <!-- Item 1 -->
+                <div class="menu-item">
+                    <div class="menu-img" style="background-image: url('https://images.unsplash.com/photo-1568901346375-23c9450c58cd?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60');"></div>
+                    <div class="menu-details">
+                        <div class="item-name">Zinger Burger</div>
+                        <div class="item-desc">Crispy chicken fillet with signature sauce</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="item-price">Rs.250</div>
+                            <button class="add-btn" onclick="addToCart('Zinger Burger', 250)">Add</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Item 2 -->
+                <div class="menu-item">
+                    <div class="menu-img" style="background-image: url('https://images.unsplash.com/photo-1573080496987-a199f8cd4054?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60');"></div>
+                    <div class="menu-details">
+                        <div class="item-name">Fries</div>
+                        <div class="item-desc">Golden crispy fries with seasoning</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="item-price">Rs.80</div>
+                            <button class="add-btn" onclick="addToCart('Fries', 80)">Add</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Item 3 -->
+                <div class="menu-item">
+                    <div class="menu-img" style="background-image: url('https://images.unsplash.com/photo-1589302168068-964664d93dc0?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60');"></div>
+                    <div class="menu-details">
+                        <div class="item-name">Biryani</div>
+                        <div class="item-desc">Aromatic chicken biryani</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="item-price">Rs.300</div>
+                            <span class="sold-out">Sold Out</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN 3: CHECKOUT -->
+        <div id="screen-checkout" class="screen">
+            <!-- Back Button Header -->
+            <div style="padding: 20px; color: var(--primary-dark);">
+                <i class="fas fa-arrow-left" style="cursor: pointer;" onclick="switchScreen('menu')"></i>
+            </div>
+
+            <div class="checkout-container">
+                <!-- Location Dropdown -->
+                <div class="location-card">
+                    <span style="color: #64748b; font-weight: 400;">Location</span>
+                    <span>Hostel 5 <i class="fas fa-caret-down"></i></span>
+                </div>
+
+                <!-- Bill Summary -->
+                <div class="bill-card">
+                    <div class="bill-row">
+                        <span><span class="qty-badge">1x</span> Zinger Burger</span>
+                        <span>Rs.250</span>
+                    </div>
+                    <div class="bill-row">
+                        <span><span class="qty-badge">1x</span> Fries</span>
+                        <span>Rs.80</span>
+                    </div>
+                    <hr style="border: 0; border-top: 1px dashed #e2e8f0; margin: 15px 0;">
+                    <div class="bill-row">
+                        <span style="color: #64748b;">Subtotal</span>
+                        <span>Rs.330</span>
+                    </div>
+                    <div class="bill-row">
+                        <span style="color: #64748b;">Delivery</span>
+                        <span>Rs.30</span>
+                    </div>
+                    <div class="bill-row total">
+                        <span>Total</span>
+                        <span>Rs.360</span>
+                    </div>
+                </div>
+
+                <!-- Phone Input -->
+                <div class="input-group">
+                    <label class="input-label">Phone Number (Required for Sync)</label>
+                    <input type="tel" class="phone-input" placeholder="+92 3XX-XXXXXXX" value="+92 312-5551234">
+                </div>
+
+                <!-- Pay Button -->
+                <button class="btn-red" onclick="processPayment()">
+                    Pay via JazzCash
+                </button>
+            </div>
+        </div>
+
+        <!-- POPUP: APP UPSELL -->
+        <div class="popup-overlay" id="upsell-popup">
+            <div class="popup-card">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <h2 style="margin: 0; font-size: 1.4rem;">Unlock App Features?</h2>
+                    <i class="fas fa-mobile-alt" style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 10px;"></i>
+                </div>
+                
+                <ul class="feature-list">
+                    <li><i class="fas fa-check" style="color: #4ade80;"></i> Live rider map</li>
+                    <li><i class="fas fa-check" style="color: #4ade80;"></i> 1-tap reorder</li>
+                    <li><i class="fas fa-check" style="color: #4ade80;"></i> Order history</li>
+                </ul>
+
+                <div class="popup-actions">
+                    <button class="btn-white" onclick="alert('Redirecting to App Store...')">Download App</button>
+                    <button class="btn-outline" onclick="closePopup()">Later</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Simple Navigation Logic
+        function switchScreen(screenName) {
+            // Hide all
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            // Show target
+            if(screenName === 'menu') document.getElementById('screen-menu').classList.add('active');
+            if(screenName === 'checkout') document.getElementById('screen-checkout').classList.add('active');
+        }
+
+        // Fake Logic for interactivity
+        function addToCart(item, price) {
+            // In a real app, this would update state. Here we just give feedback.
+            alert(`Added ${item} to cart`);
+        }
+
+        function processPayment() {
+            // Show processing state
+            const btn = document.querySelector('.btn-red');
+            const originalText = btn.innerText;
+            btn.innerText = "Processing...";
+            
+            setTimeout(() => {
+                btn.innerText = originalText;
+                // Show Upsell Popup
+                document.getElementById('upsell-popup').style.display = 'flex';
+            }, 1000);
+        }
+
+        function closePopup() {
+            document.getElementById('upsell-popup').style.display = 'none';
+            // Reset to beginning
+            location.reload();
+        }
+    </script>
+</body>
+</html>

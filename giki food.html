@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GIKI Food - Multi-Role Simulator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- GLOBAL STYLES --- */
+        :root {
+            --app-dark: #0f172a;    /* Navy Brand Color */
+            --app-orange: #ea580c;  /* Primary Action Color */
+            --app-blue: #3b82f6;    
+            --app-green: #10b981;   
+            --app-bg: #f8fafc;
+            --app-cream: #fff7ed;   
+            --text-main: #1e293b;
+            --input-bg: #f1f5f9;
+            --rider-dark: #111827; 
+        }
+
+        /* HIDE SCROLLBARS GLOBALLY */
+        * {
+            -ms-overflow-style: none;  
+            scrollbar-width: none;  
+            box-sizing: border-box;
+        }
+        *::-webkit-scrollbar {
+            display: none; 
+            width: 0;
+            height: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #cbd5e1;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* --- PHONE FRAME --- */
+        .phone-frame {
+            width: 330px;
+            height: 700px;
+            background: black;
+            border-radius: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+            border: 8px solid #0f172a;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .notch {
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 120px; height: 25px; background: #0f172a;
+            border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;
+            z-index: 9999;
+        }
+
+        /* --- SCREENS --- */
+        .screen {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            overflow-y: auto;
+            overflow-x: hidden;
+            position: relative;
+            background: white; 
+            animation: fadeIn 0.3s ease;
+            padding-bottom: 80px; 
+        }
+        .screen.active { display: flex; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* === TOAST NOTIFICATION === */
+        .toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #1e293b;
+            color: #fff;
+            text-align: center;
+            border-radius: 50px;
+            padding: 12px 20px;
+            position: absolute; 
+            z-index: 10000;
+            left: 50%;
+            transform: translateX(-50%); 
+            bottom: 90px;
+            font-size: 0.85rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .toast.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 100px;
+        }
+        
+        /* === COMMON UI ELEMENTS === */
+        .btn-orange { width: 100%; padding: 15px; background: var(--app-orange); color: white; border: none; border-radius: 10px; font-weight: 600; font-size: 1rem; cursor: pointer; margin-top: 10px; }
+        .btn-outline { width: 100%; padding: 15px; background: white; color: var(--app-dark); border: 1px solid #e2e8f0; border-radius: 10px; font-weight: 600; font-size: 0.9rem; cursor: pointer; margin-top: 15px; }
+        .btn-logout-small { padding: 8px 30px; background: var(--app-dark); border: none; color: white; border-radius: 30px; font-weight: 600; font-size: 0.9rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .btn-logout-small:active { transform: scale(0.98); opacity: 0.9; }
+        .btn-logout-profile { padding: 8px 20px; background: white; border: 1px solid #ef4444; color: #ef4444; border-radius: 20px; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
+
+        /* === SCREEN SPECIFIC STYLES === */
+        
+        /* OS & Splash */
+        #screen-os { background: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60') no-repeat center center/cover; align-items: center; padding-top: 60px; }
+        .app-icon { width: 55px; height: 55px; border-radius: 15px; background: #E85025; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; }
+        .app-icon:active { transform: scale(0.9); }
+        .app-icon img { width: 100%; height: 100%; object-fit: cover; }
+        .icon-label { color: white; font-size: 0.75rem; margin-top: 5px; text-shadow: 0 1px 3px rgba(0,0,0,0.8); font-weight: 500; }
+
+        /* Roles - Fixed Padding for Notch */
+        .role-header { text-align: center; margin-bottom: 30px; }
+        #screen-roles {
+            padding: 60px 20px 30px; /* Increased top padding to clear notch */
+            background: white;
+            justify-content: center;
+        }
+        .role-btn { padding: 18px; margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: all 0.2s; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .role-btn:hover { border-color: var(--app-orange); background: #fff7ed; transform: translateY(-2px); }
+        .role-icon { width: 40px; height: 40px; border-radius: 10px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: var(--app-dark); font-size: 1.1rem; }
+
+        /* Vendor Select */
+        #screen-vendor-select {
+            padding-top: 40px; /* Safe padding for header */
+            background: #f8fafc;
+        }
+        .vendor-select-card { background: white; border-radius: 20px; padding: 15px; display: flex; align-items: center; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); cursor: pointer; transition: transform 0.1s; }
+        .vendor-select-card:active { transform: scale(0.98); }
+        .vendor-icon-box { width: 60px; height: 60px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+
+        /* Login - Fixed Padding */
+        #screen-login {
+            padding: 50px 20px 20px; /* Increased top padding to clear notch */
+            background: white;
+        }
+        .login-header { margin-top: 10px; margin-bottom: 30px; }
+        .login-icon { width: 50px; height: 50px; background: #fff7ed; color: var(--app-orange); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 15px; }
+        .input-group { margin-bottom: 20px; }
+        .input-label { font-size: 0.8rem; font-weight: 600; color: var(--app-dark); margin-bottom: 8px; display: block; }
+        .auth-input { width: 100%; padding: 15px; background: var(--input-bg); border: none; border-radius: 10px; font-family: inherit; box-sizing: border-box; }
+
+        /* Splash Screen - Fixed centering and safe area */
+        #screen-splash {
+            background-color: #E85025;
+            align-items: center;
+            justify-content: center;
+            padding-bottom: 0;
+            padding-top: 40px; /* Ensure text doesn't overlap notch if it floats up */
+        }
+        .splash-full-img { width: 100%; height: 100%; object-fit: contain; } /* Changed to contain to prevent cropping content */
+
+        /* User Home */
+        .user-header { padding: 40px 20px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .avatar-circle { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .search-bar { margin: 0 20px 20px; padding: 12px 15px; background: var(--input-bg); border-radius: 12px; color: #94a3b8; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; }
+        .section-title { font-size: 1rem; font-weight: 700; color: var(--app-dark); margin: 0 20px 15px; display: flex; align-items: center; gap: 5px; }
+        .usual-card { margin: 0 20px 25px; background: white; border: 1px solid #e2e8f0; border-radius: 15px; padding: 15px; display: flex; align-items: center; gap: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+        .usual-img { width: 60px; height: 60px; border-radius: 10px; object-fit: cover; }
+        .btn-sm-orange { padding: 6px 12px; background: #fff7ed; color: var(--app-orange); border-radius: 20px; font-size: 0.75rem; font-weight: 600; border: none; cursor: pointer; }
+        .rest-card { display: flex; align-items: center; background: white; border: 1px solid #f1f5f9; padding: 15px; border-radius: 15px; margin-bottom: 12px; cursor: pointer; transition: transform 0.1s; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .rest-card:active { transform: scale(0.98); }
+        .rest-icon { width: 45px; height: 45px; border-radius: 50%; background: #f8fafc; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; margin-right: 15px; }
+        .arrow-right { margin-left: auto; color: #cbd5e1; font-size: 0.9rem; }
+
+        /* Menu */
+        .menu-header { padding: 40px 20px 10px; display: flex; justify-content: space-between; align-items: center; }
+        .menu-banner { margin: 10px 20px 20px; padding: 20px; background: #f8fafc; border-radius: 20px; display: flex; align-items: center; gap: 15px; }
+        .menu-icon-lg { width: 50px; height: 50px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); font-size: 1.5rem; }
+        .menu-item { margin: 0 20px 20px; display: flex; align-items: center; gap: 15px; }
+        .menu-item-img { width: 70px; height: 70px; border-radius: 15px; object-fit: cover; background: #eee; }
+        .add-btn-outline { padding: 5px 15px; border: 1px solid var(--app-orange); color: var(--app-orange); background: white; border-radius: 20px; font-size: 0.8rem; cursor: pointer; }
+
+        /* Cart */
+        .checkout-header { padding: 40px 20px 20px; display: flex; align-items: center; gap: 15px; background: white; flex-shrink: 0; }
+        .checkout-section-card { background: white; border-radius: 20px; margin: 0 20px 20px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+        .checkout-section-title { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--app-dark); margin-bottom: 20px; font-size: 1rem; }
+        .checkout-icon-circle { width: 35px; height: 35px; background: #fff7ed; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--app-orange); font-size: 1rem; }
+        .checkout-item-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.9rem; }
+        .checkout-divider { height: 1px; background: #f1f5f9; margin: 15px 0; }
+        .checkout-total-row { display: flex; justify-content: space-between; font-weight: 700; font-size: 1.1rem; }
+        .checkout-input { width: 100%; padding: 15px; background: var(--input-bg); border: none; border-radius: 12px; font-family: inherit; box-sizing: border-box; font-size: 0.9rem; color: var(--text-main); margin-bottom: 15px; }
+        .checkout-select { width: 100%; padding: 15px; background: var(--input-bg); border: none; border-radius: 12px; font-family: inherit; font-size: 0.9rem; color: #64748b; margin-bottom: 15px; appearance: none; }
+        .payment-option { display: flex; align-items: center; justify-content: space-between; padding: 15px; border: 1px solid #e2e8f0; border-radius: 15px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s; }
+        .payment-option.selected { border-color: var(--app-dark); background: #f8fafc; }
+        .payment-info { display: flex; align-items: center; gap: 15px; }
+        .payment-icon { font-size: 1.2rem; color: #64748b; width: 20px; text-align: center; }
+        .bottom-action-bar { position: absolute; bottom: 30px; left: 20px; right: 20px; background: var(--app-dark); color: white; padding: 18px 25px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 20px rgba(15, 23, 42, 0.2); cursor: pointer; z-index: 100; }
+
+        /* History & Profile */
+        .qr-box { background: var(--app-dark); color: white; margin: 20px; padding: 30px; border-radius: 20px; text-align: center; }
+        .qr-img { width: 150px; height: 150px; background: white; margin: 20px auto; border-radius: 10px; padding: 10px; display: flex; align-items: center; justify-content: center; }
+        .history-alert { margin: 20px; padding: 15px; background: #eff6ff; color: var(--app-blue); border-radius: 10px; font-size: 0.85rem; display: flex; align-items: center; gap: 10px; }
+        .history-card { background: white; border: 1px solid #f1f5f9; border-radius: 20px; margin: 0 20px 15px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+        .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .history-number { font-weight: 700; font-size: 1.1rem; color: var(--app-dark); }
+        .history-badge { background: #ffedd5; color: #c2410c; padding: 4px 10px; border-radius: 8px; font-size: 0.7rem; font-weight: 600; }
+        .history-rest { font-weight: 600; font-size: 0.95rem; margin-bottom: 5px; color: var(--app-dark); }
+        .history-items { font-size: 0.8rem; color: #64748b; margin-bottom: 8px; }
+        .history-meta { font-size: 0.75rem; color: #94a3b8; display: flex; gap: 8px; margin-bottom: 15px; }
+        
+        /* Bottom Nav */
+        .bottom-nav { position: absolute; bottom: 0; width: 100%; background: white; padding: 15px 0 25px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-around; z-index: 100; left: 0; }
+        .nav-item { color: #94a3b8; font-size: 1.2rem; cursor: pointer; position: relative; }
+        .nav-item.active { color: var(--app-dark); }
+        .nav-indicator { position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); width: 5px; height: 5px; background: var(--app-dark); border-radius: 50%; display: none; }
+        .nav-item.active .nav-indicator { display: block; }
+        .badge { background: #fef3c7; color: #d97706; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-block; margin-top: 5px; }
+
+        /* Vendor Dashboard */
+        .vendor-tab { flex: 1; text-align: center; padding: 15px; font-size: 0.9rem; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; }
+        .vendor-tab.active { color: var(--app-orange); border-bottom: 2px solid var(--app-orange); font-weight: 600; }
+        .vendor-item-card { background: white; border: 1px solid #f1f5f9; border-radius: 15px; padding: 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--app-dark); }
+        input:checked + .slider:before { transform: translateX(16px); }
+        .vendor-order-card { background: #fff7ed; border: 1px solid #ffedd5; border-radius: 15px; padding: 15px; margin-bottom: 15px; }
+        .vendor-order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .order-pill-placed { background: #fef3c7; color: #d97706; padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; }
+        .order-pill-preparing { background: #dbeafe; color: #2563eb; padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; }
+        .order-pill-ready { background: #d1fae5; color: #059669; padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; }
+        .order-pill-pickup { background: #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; }
+        .vendor-action-btn { width: 100%; padding: 10px; border-radius: 10px; font-weight: 600; cursor: pointer; border: none; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-green-solid { background: #10b981; color: white; }
+        .btn-blue-solid { background: #3b82f6; color: white; }
+
+        /* Rider Styles */
+        .rider-header { background: var(--rider-dark); color: white; padding: 40px 20px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .rider-avatar { width: 40px; height: 40px; border-radius: 50%; background: #374151; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+        .status-pill { background: var(--app-green); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+        #rider-idle { background: var(--rider-dark); color: white; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .job-card { background: #eff6ff; border-radius: 20px; margin: 20px; padding: 25px 20px; text-align: center; border: 1px solid #dbeafe; }
+        .job-icon-circle { width: 70px; height: 70px; background: #dbeafe; border-radius: 50%; color: var(--app-blue); display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 1.8rem; }
+        .route-card { background: #fff7ed; border-radius: 20px; margin: 20px; padding: 25px 20px; text-align: center; border: 1px solid #ffedd5; }
+        .route-icon-circle { width: 70px; height: 70px; background: #ffedd5; border-radius: 50%; color: var(--app-orange); display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 1.8rem; }
+        .info-block { background: white; border-radius: 15px; padding: 15px; text-align: left; margin-top: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+        .info-label { font-size: 0.75rem; color: #94a3b8; margin-bottom: 3px; display: block; }
+        .info-val { font-weight: 600; color: var(--app-dark); font-size: 0.95rem; }
+        .action-btn-blue { width: 100%; padding: 15px; background: var(--app-blue); color: white; border: none; border-radius: 12px; font-weight: 600; margin-top: 15px; cursor: pointer; }
+        .action-btn-green { width: 100%; padding: 15px; background: var(--app-green); color: white; border: none; border-radius: 12px; font-weight: 600; margin-top: 15px; cursor: pointer; }
+        .action-btn-white { width: 100%; padding: 15px; background: white; color: var(--app-dark); border: 1px solid #e2e8f0; border-radius: 12px; font-weight: 600; margin-top: 10px; cursor: pointer; }
+
+        /* === TRACKING STYLES (FIXED) === */
+        .tracking-status-banner {
+            background: #E85025; 
+            color: white; 
+            border-radius: 15px; 
+            padding: 20px; 
+            margin: 20px;
+            margin-bottom: 30px; 
+            position: relative; 
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(234, 88, 12, 0.2);
+        }
+        
+        .track-container { padding: 0 20px; }
+        
+        /* Fixed Progress Bar Alignment */
+        .progress-track { 
+            display: flex; 
+            justify-content: space-between; 
+            position: relative; 
+            margin-bottom: 40px; 
+            z-index: 1;
+        }
+        
+        /* Wrapper ensures lines are constrained correctly between the first and last circle centers */
+        .timeline-lines {
+            position: absolute;
+            top: 17px; /* Aligns with vertical center of 38px circle (19px) minus half line height (2px) */
+            left: 30px; /* Center of first circle (half of 60px flex item) */
+            right: 30px; /* Center of last circle */
+            height: 4px;
+            z-index: -1;
+        }
+
+        /* The Gray Background Line */
+        .progress-line-bg { 
+            position: absolute; 
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #f1f5f9; 
+            border-radius: 2px; 
+        }
+        
+        /* The Green Fill Line */
+        .progress-line-fill { 
+            position: absolute; 
+            top: 0; left: 0; bottom: 0;
+            background: var(--app-green); 
+            border-radius: 2px; 
+            width: 0%; /* Now 100% width = distance between start and end circle centers */
+            transition: width 0.5s ease; 
+        }
+
+        .track-step { 
+            z-index: 2; 
+            text-align: center; 
+            width: 60px; 
+            position: relative; 
+        }
+        
+        .step-circle { 
+            width: 38px; 
+            height: 38px; 
+            background: #f1f5f9; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            margin: 0 auto 8px; 
+            color: #94a3b8; 
+            font-size: 0.9rem; 
+            border: 4px solid white; 
+            transition: all 0.3s ease; 
+        }
+        
+        .track-step.active .step-circle { background: var(--app-green); color: white; transform: scale(1.1); box-shadow: 0 0 0 3px #d1fae5; }
+        .track-step.current .step-circle { background: var(--app-orange); box-shadow: 0 0 0 3px #ffedd5; }
+        .step-label { font-size: 0.7rem; color: #94a3b8; font-weight: 500; }
+        .track-step.active .step-label, .track-step.current .step-label { color: var(--app-dark); font-weight: 700; }
+
+    </style>
+</head>
+<body>
+
+    <div class="phone-frame">
+        <div class="notch"></div>
+
+        <!-- Toast Container -->
+        <div id="toast" class="toast"></div>
+
+        <!-- === 0. OS HOME === -->
+        <div id="screen-os" class="screen active">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 20px 20px 0;">
+                <div style="text-align: center;" onclick="launchApp()">
+                    <div class="app-icon">
+                        <img src="giki_splash.png" alt="App" onerror="this.parentElement.innerHTML='<i class=\'fas fa-utensils\' style=\'color:white; font-size:1.5rem;\'></i>'">
+                    </div>
+                    <div class="icon-label">Giki Food</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- === 1. SPLASH === -->
+        <div id="screen-splash" class="screen">
+            <img src="giki_splash.png" class="splash-full-img" alt="Giki Food Splash" onerror="var p=this.parentElement; p.innerHTML='<h1 style=\'color:white; font-size:2rem; text-shadow:0 2px 4px rgba(0,0,0,0.2);\'>Giki Food</h1>'; p.style.flexDirection='column';">
+        </div>
+
+        <!-- === 2. ROLE SELECTION === -->
+        <div id="screen-roles" class="screen">
+            <div class="role-header">
+                <img src="giki_splash.png" style="width: 80px; height: 80px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 15px;" onerror="this.style.display='none'">
+                <h2 style="margin: 0;">Welcome</h2>
+                <p style="color: #64748b; margin-top: 5px;">Choose your role to continue</p>
+            </div>
+            
+            <div class="role-btn" onclick="prepareLogin('user')">
+                <div class="role-icon"><i class="fas fa-user"></i></div>
+                <div><strong>Student</strong><br><span style="font-size:0.8rem; color:#64748b;">Browse & Order Food</span></div>
+            </div>
+            <div class="role-btn" onclick="prepareLogin('delivery')">
+                <div class="role-icon"><i class="fas fa-motorcycle"></i></div>
+                <div><strong>Delivery Man</strong><br><span style="font-size:0.8rem; color:#64748b;">Manage Orders</span></div>
+            </div>
+            <div class="role-btn" onclick="showScreen('screen-vendor-select')">
+                <div class="role-icon"><i class="fas fa-store"></i></div>
+                <div><strong>Vendor</strong><br><span style="font-size:0.8rem; color:#64748b;">Manage Business</span></div>
+            </div>
+        </div>
+
+        <!-- === 2.5 VENDOR PORTAL SELECT === -->
+        <div id="screen-vendor-select" class="screen">
+            <div style="padding: 40px 20px 20px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1 style="margin:0; font-size: 1.8rem; color: var(--app-dark);">Vendor Portal</h1>
+                    <p style="color: #64748b; margin: 5px 0 0;">Select your restaurant to manage</p>
+                </div>
+            </div>
+
+            <div style="padding: 0 20px;">
+                <!-- Raju -->
+                <div class="vendor-select-card" onclick="prepareLogin('vendor', 'Raju')">
+                    <div class="vendor-icon-box" style="background: #ffedd5;">
+                        <i class="fas fa-hamburger" style="color: #c2410c;"></i>
+                    </div>
+                    <div style="flex:1; margin-left: 15px;">
+                        <div style="font-weight: 700; font-size: 1.1rem; color: var(--app-dark);">Raju</div>
+                    </div>
+                    <i class="fas fa-store" style="color: var(--app-orange); font-size: 1.2rem;"></i>
+                </div>
+                <!-- Ayan -->
+                <div class="vendor-select-card" onclick="prepareLogin('vendor', 'Ayan')">
+                    <div class="vendor-icon-box" style="background: #f3e8ff;">
+                        <i class="fas fa-utensils" style="color: #7e22ce;"></i>
+                    </div>
+                    <div style="flex:1; margin-left: 15px;">
+                        <div style="font-weight: 700; font-size: 1.1rem; color: var(--app-dark);">Ayan</div>
+                    </div>
+                    <i class="fas fa-store" style="color: var(--app-orange); font-size: 1.2rem;"></i>
+                </div>
+                <!-- Hot n Spicy -->
+                <div class="vendor-select-card" onclick="prepareLogin('vendor', 'Hot n Spicy')">
+                    <div class="vendor-icon-box" style="background: #fee2e2;">
+                        <i class="fas fa-pepper-hot" style="color: #b91c1c;"></i>
+                    </div>
+                    <div style="flex:1; margin-left: 15px;">
+                        <div style="font-weight: 700; font-size: 1.1rem; color: var(--app-dark);">Hot n Spicy</div>
+                    </div>
+                    <i class="fas fa-store" style="color: var(--app-orange); font-size: 1.2rem;"></i>
+                </div>
+                <!-- Cafe -->
+                <div class="vendor-select-card" onclick="prepareLogin('vendor', 'Cafe')">
+                    <div class="vendor-icon-box" style="background: #ffedd5;">
+                        <i class="fas fa-coffee" style="color: #9a3412;"></i>
+                    </div>
+                    <div style="flex:1; margin-left: 15px;">
+                        <div style="font-weight: 700; font-size: 1.1rem; color: var(--app-dark);">Cafe</div>
+                    </div>
+                    <i class="fas fa-store" style="color: var(--app-orange); font-size: 1.2rem;"></i>
+                </div>
+            </div>
+            <div style="padding: 20px; text-align: center; margin-top: auto;">
+                 <button class="btn-logout-small" onclick="showScreen('screen-roles')" style="width: auto; padding: 8px 30px;">Back</button>
+            </div>
+        </div>
+
+        <!-- === 3. LOGIN === -->
+        <div id="screen-login" class="screen">
+            <div style="padding: 20px;">
+                <i class="fas fa-arrow-left" onclick="showScreen('screen-roles')" style="cursor: pointer; font-size: 1.2rem; color: var(--app-dark);"></i>
+            </div>
+            <div class="login-header" style="padding: 0 20px; margin-top: 0;">
+                <div class="login-icon"><i class="fas fa-lock"></i></div>
+                <h1 style="margin: 0; color: var(--app-dark); font-size: 1.5rem;" id="login-title">Login</h1>
+                <p style="color: #64748b; margin: 5px 0 0;">Enter your credentials</p>
+            </div>
+
+            <div style="background: white; border: 1px solid #f1f5f9; padding: 20px; border-radius: 20px; margin: 0 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03);">
+                <div class="input-group">
+                    <label class="input-label">Email / ID</label>
+                    <input type="email" class="auth-input" placeholder="user@giki.edu.pk">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Password</label>
+                    <input type="password" class="auth-input" value="password123">
+                </div>
+                <div style="text-align: right; margin-bottom: 20px;">
+                    <span style="font-size: 0.8rem; color: #64748b; cursor: pointer;" onclick="showToast('Reset link sent to email')">Forgot password?</span>
+                </div>
+                <button class="btn-orange" onclick="completeLogin()">Sign In</button>
+            </div>
+        </div>
+
+        <!-- === 4. USER HOME === -->
+        <div id="screen-user-home" class="screen">
+            <div class="user-header">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80" class="avatar-circle">
+                    <div><div style="font-size: 0.75rem; color: #64748b;">Welcome back,</div><div style="font-weight: 700; color: var(--app-dark);">Ali! 👋</div></div>
+                </div>
+                <div style="width: 35px; height: 35px; background: white; border: 1px solid #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--app-dark); cursor: pointer; position: relative;" onclick="showCart()">
+                    <i class="fas fa-shopping-cart"></i>
+                    <div id="cart-badge" style="position: absolute; top:-5px; right:-5px; background:red; color:white; width:15px; height:15px; border-radius:50%; font-size:0.6rem; display:none; align-items:center; justify-content:center;">0</div>
+                </div>
+            </div>
+
+            <div class="search-bar"><i class="fas fa-search"></i> What are you craving?</div>
+
+            <!-- Active Order Banner -->
+            <div id="user-active-order-banner" style="display:none; margin: 0 20px 20px; background: var(--app-dark); color: white; padding: 15px; border-radius: 15px; cursor: pointer;" onclick="showScreen('screen-user-track')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 0.7rem; opacity: 0.7;">Active Order</div>
+                        <div style="font-weight: 600;" id="home-banner-status">Preparing...</div>
+                    </div>
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+
+            <div class="section-title">Your Usual <i class="fas fa-fire" style="color: #f59e0b;"></i></div>
+            <div class="usual-card">
+                <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=150&q=80" class="usual-img">
+                <div style="flex: 1;"><div style="font-weight: 700; font-size: 0.9rem;">Zinger Burger</div><div style="font-size: 0.7rem; color: #94a3b8;">3x ordered this week</div></div>
+                <button class="btn-sm-orange" onclick="addToCart('Zinger Burger', 350)">Order Again</button>
+            </div>
+
+            <div class="section-title">Restaurants</div>
+            <div class="rest-list">
+                <div class="rest-card" onclick="openMenu('raju')">
+                    <div class="rest-icon"><i class="fas fa-hamburger" style="color: #f59e0b;"></i></div>
+                    <div><div style="font-weight: 600; font-size: 0.95rem;">Raju</div><div style="font-size: 0.75rem; color: #64748b;"><i class="fas fa-star" style="color:#f59e0b;"></i> 4.6</div></div>
+                    <i class="fas fa-chevron-right arrow-right"></i>
+                </div>
+                <div class="rest-card" onclick="openMenu('ayan')">
+                    <div class="rest-icon"><i class="fas fa-utensils" style="color: #8b5cf6;"></i></div>
+                    <div><div style="font-weight: 600; font-size: 0.95rem;">Ayan</div><div style="font-size: 0.75rem; color: #64748b;"><i class="fas fa-star" style="color:#f59e0b;"></i> 4.5</div></div>
+                    <i class="fas fa-chevron-right arrow-right"></i>
+                </div>
+                <div class="rest-card" onclick="openMenu('hot')">
+                    <div class="rest-icon"><i class="fas fa-pepper-hot" style="color: #ef4444;"></i></div>
+                    <div><div style="font-weight: 600; font-size: 0.95rem;">Hot n Spicy</div><div style="font-size: 0.75rem; color: #64748b;"><i class="fas fa-star" style="color:#f59e0b;"></i> 4.7</div></div>
+                    <i class="fas fa-chevron-right arrow-right"></i>
+                </div>
+                <div class="rest-card" onclick="openMenu('cafe')">
+                    <div class="rest-icon"><i class="fas fa-coffee" style="color: #78350f;"></i></div>
+                    <div><div style="font-weight: 600; font-size: 0.95rem;">Cafe</div><div style="font-size: 0.75rem; color: #64748b;"><i class="fas fa-star" style="color:#f59e0b;"></i> 4.8</div></div>
+                    <i class="fas fa-chevron-right arrow-right"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- === 5. USER MENU (Restaurant Detail) === -->
+        <div id="screen-user-menu" class="screen">
+            <div class="menu-header">
+                <i class="fas fa-arrow-left" onclick="showScreen('screen-user-home')" style="cursor:pointer; color: var(--app-dark);"></i>
+                <div style="font-weight: 700; font-size: 1.1rem;" id="menu-title-text">Restaurant Name</div>
+                <i class="fas fa-shopping-bag" style="color: var(--app-dark); cursor: pointer;" onclick="showCart()"></i>
+            </div>
+            
+            <div class="menu-banner">
+                <div class="menu-icon-lg" id="menu-banner-icon"><i class="fas fa-hamburger"></i></div>
+                <div><div style="font-size: 0.85rem; font-weight: 600;"> <i class="fas fa-star" style="color:#f59e0b;"></i> <span id="menu-rating">4.6</span> &bull; 25-35 min</div><div style="font-size: 0.7rem; color: #64748b;">Burgers &bull; Fast Food</div></div>
+            </div>
+            
+            <div style="padding: 0 20px 15px; font-weight: 700; color: var(--app-dark);">Popular Items</div>
+            <div id="menu-items-container"></div>
+        </div>
+
+        <!-- === 5b. USER CART === -->
+        <div id="screen-user-cart" class="screen">
+            <div class="checkout-header">
+                <i class="fas fa-arrow-left" onclick="showScreen('screen-user-home')" style="cursor:pointer; color: var(--app-dark);"></i>
+                <div style="font-weight: 700; font-size: 1.1rem;">Checkout</div>
+            </div>
+            
+            <div style="flex: 1; overflow-y: auto; padding-bottom: 100px;">
+                <div class="checkout-section-card">
+                    <div class="checkout-section-title"><div class="checkout-icon-circle"><i class="fas fa-shopping-bag"></i></div>Order Summary</div>
+                    <div id="cart-items-wrapper"></div>
+                    <div class="checkout-divider"></div>
+                    <div class="checkout-item-row"><span style="color:#64748b;">Subtotal</span><span id="cart-subtotal">Rs. 0</span></div>
+                    <div class="checkout-item-row"><span style="color:#64748b;">Delivery Fee</span><span>Rs. 50</span></div>
+                    <div class="checkout-divider"></div>
+                    <div class="checkout-total-row"><span>Total</span><span id="cart-total-final">Rs. 0</span></div>
+                </div>
+
+                <div class="checkout-section-card">
+                    <div class="checkout-section-title"><div class="checkout-icon-circle"><i class="fas fa-phone-alt"></i></div>Contact Information</div>
+                    <div style="font-size:0.8rem; font-weight:600; margin-bottom:5px;">Full Name *</div>
+                    <input type="text" class="checkout-input" value="Ali Khan">
+                    <div style="font-size:0.8rem; font-weight:600; margin-bottom:5px;">Phone Number *</div>
+                    <input type="text" class="checkout-input" value="+92 300 1234567">
+                </div>
+
+                <div class="checkout-section-card">
+                    <div class="checkout-section-title"><div class="checkout-icon-circle"><i class="fas fa-map-marker-alt"></i></div>Delivery Address</div>
+                    <div style="font-size:0.8rem; font-weight:600; margin-bottom:5px;">Select Hostel *</div>
+                    <select class="checkout-select"><option>Hostel 5</option><option>Hostel 9</option><option>Hostel 11</option></select>
+                    <div style="font-size:0.8rem; font-weight:600; margin-bottom:5px;">Room Number (Optional)</div>
+                    <input type="text" class="checkout-input" placeholder="e.g., 201">
+                </div>
+
+                <div class="checkout-section-card">
+                    <div class="checkout-section-title"><div class="checkout-icon-circle"><i class="far fa-credit-card"></i></div>Payment Method</div>
+                    <div class="payment-option selected" onclick="selectPayment(this)">
+                        <div class="payment-info"><i class="fas fa-money-bill-wave payment-icon"></i><div><div style="font-weight:600; font-size:0.9rem;">Cash on Delivery</div><div style="font-size:0.7rem; color:#64748b;">Pay when you receive</div></div></div>
+                        <i class="fas fa-dot-circle" style="color:var(--app-dark);"></i>
+                    </div>
+                    <div class="payment-option" onclick="selectPayment(this)">
+                        <div class="payment-info"><i class="far fa-credit-card payment-icon"></i><div><div style="font-weight:600; font-size:0.9rem;">Credit/Debit Card</div><div style="font-size:0.7rem; color:#64748b;">Pay securely online</div></div></div>
+                        <i class="far fa-circle" style="color:#cbd5e1;"></i>
+                    </div>
+                    <div class="payment-option" onclick="selectPayment(this)">
+                        <div class="payment-info"><i class="fas fa-wallet payment-icon"></i><div><div style="font-weight:600; font-size:0.9rem;">Digital Wallet</div><div style="font-size:0.7rem; color:#64748b;">EasyPaisa, JazzCash</div></div></div>
+                        <i class="far fa-circle" style="color:#cbd5e1;"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bottom-action-bar" onclick="placeOrder()">
+                <div style="display: flex; align-items: center; gap: 10px; font-weight: 600;"><i class="far fa-check-circle" style="font-size: 1.2rem;"></i>Place Order</div>
+                <div style="font-weight: 700; font-size: 1.1rem;" id="checkout-btn-total">Rs. 0</div>
+            </div>
+        </div>
+
+        <!-- === 6. USER HISTORY === -->
+        <div id="screen-user-history" class="screen">
+            <div class="user-header"><h2 style="margin:0;">Order History</h2></div>
+            <div class="history-alert"><i class="fas fa-info-circle"></i> Web orders synced seamlessly via phone</div>
+            <div id="history-list" style="padding: 0 20px;">
+                <!-- Content injected by renderHistory function -->
+            </div>
+        </div>
+
+        <!-- === 6b. USER TRACK ORDER (New Screen) === -->
+        <div id="screen-user-track" class="screen">
+            <div class="checkout-header">
+                <i class="fas fa-arrow-left" onclick="showScreen('screen-user-home')" style="cursor:pointer; color: var(--app-dark);"></i>
+                <div style="font-weight: 700; font-size: 1.1rem;">Order Track <br> <span style="font-weight:400; font-size:0.9rem; color:#64748b;" id="track-rest-name">Ayan</span></div>
+            </div>
+
+            <!-- Added IDs to these elements to update them via JS -->
+            <div class="tracking-status-banner" id="track-banner">
+                <div style="font-size: 0.9rem; opacity: 0.8;" id="track-est-label">Estimated Arrival</div>
+                <div style="font-size: 1.8rem; font-weight: 700; margin-bottom: 5px;" id="track-est-time">20-25 min</div>
+                <div style="font-size: 0.9rem; font-weight: 500;" id="tracking-text-status">Order Placed</div>
+                <i class="fas fa-map-marker-alt" style="position:absolute; right:-10px; bottom:-10px; font-size:5rem; opacity:0.2;"></i>
+            </div>
+
+            <div class="track-container">
+                <div style="font-weight: 700; margin-bottom: 20px; color: var(--app-dark);">Timeline</div>
+                
+                <div class="progress-track">
+                    <!-- Line Container ensures offset alignment -->
+                    <div class="timeline-lines">
+                        <div class="progress-line-bg"></div>
+                        <div class="progress-line-fill" id="track-line-fill"></div>
+                    </div>
+                    
+                    <!-- Steps will be generated by JS -->
+                    <div class="track-step" id="step-placed">
+                        <div class="step-circle"><i class="fas fa-receipt"></i></div>
+                        <div class="step-label">Placed</div>
+                    </div>
+                    <div class="track-step" id="step-preparing">
+                        <div class="step-circle"><i class="fas fa-fire"></i></div>
+                        <div class="step-label">Preparing</div>
+                    </div>
+                    <div class="track-step" id="step-ready">
+                        <div class="step-circle"><i class="fas fa-box"></i></div>
+                        <div class="step-label">Ready</div>
+                    </div>
+                    <div class="track-step" id="step-picked_up">
+                        <div class="step-circle"><i class="fas fa-motorcycle"></i></div>
+                        <div class="step-label">On Way</div>
+                    </div>
+                    <div class="track-step" id="step-delivered">
+                        <div class="step-circle"><i class="fas fa-check"></i></div>
+                        <div class="step-label">Delivered</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin: 20px; padding: 20px; background: #f8fafc; border-radius: 15px;">
+                <div style="font-weight: 700; margin-bottom: 10px;">Order Details</div>
+                <div id="track-order-items" style="font-size: 0.9rem; color: #64748b;"></div>
+                <div style="margin-top: 10px; font-weight: 600; border-top: 1px solid #e2e8f0; padding-top: 10px;">
+                    Total: <span id="track-order-total">Rs. 0</span>
+                </div>
+            </div>
+            
+             <div style="padding: 0 20px; text-align: center;">
+                 <!-- Added IDs for button logic -->
+                 <button id="btn-cancel-order" class="btn-outline" style="color: #ef4444; border-color: #ef4444;" onclick="cancelOrder()">Cancel Order</button>
+                 <button id="btn-home-order" class="btn-orange" style="display:none;" onclick="finishOrderAndGoHome()">Back to Home</button>
+             </div>
+        </div>
+
+        <!-- === 7. USER PROFILE === -->
+        <div id="screen-user-profile" class="screen">
+            <div class="user-header"><h2 style="margin:0;">Profile</h2></div>
+            <div style="text-align: center; margin-top: 20px;">
+                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80" style="width:80px; height:80px; border-radius:50%;">
+                <h3 style="margin: 10px 0 5px;">Ali Khan</h3>
+                <div class="badge"><i class="fas fa-star"></i> Level 2: Frequent User</div>
+            </div>
+            <div class="qr-box">
+                <div style="font-weight: 700; margin-bottom: 10px;">Referral Code</div>
+                <div class="qr-img"><i class="fas fa-qrcode" style="font-size: 5rem; color: var(--app-dark);"></i></div>
+                <div style="font-size: 0.8rem; opacity: 0.8;">Scan to invite friends</div>
+            </div>
+            <div style="padding: 0 20px; text-align: center;">
+                <button class="btn-logout-profile" onclick="showScreen('screen-roles')"><i class="fas fa-sign-out-alt"></i> Log Out</button>
+            </div>
+        </div>
+
+        <!-- === BOTTOM NAV === -->
+        <div class="bottom-nav" id="user-nav" style="display: none;">
+            <div class="nav-item active" onclick="showScreen('screen-user-home')"><i class="fas fa-home"></i><div class="nav-indicator"></div></div>
+            <div class="nav-item" onclick="showScreen('screen-user-track')"><i class="fas fa-clock"></i><div class="nav-indicator"></div></div>
+            <div class="nav-item" onclick="showScreen('screen-user-history')"><i class="fas fa-history"></i><div class="nav-indicator"></div></div>
+            <div class="nav-item" onclick="showScreen('screen-user-profile')"><i class="far fa-user"></i><div class="nav-indicator"></div></div>
+        </div>
+
+        <!-- === DELIVERY DASHBOARD === -->
+        <div id="screen-delivery" class="screen" style="background: var(--rider-dark); padding: 0;">
+            <div class="rider-header">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div class="rider-avatar">IA</div>
+                    <div><div style="font-size: 0.7rem; color: #9ca3af;">Rider</div><div style="font-weight: 700; font-size: 1rem;">Imran Ahmed</div></div>
+                </div>
+                <div class="status-pill">Online</div>
+            </div>
+
+            <div style="flex: 1; overflow-y: auto; padding-bottom: 20px;">
+                <div id="rider-idle">
+                    <div style="width: 60px; height: 60px; background: #1f2937; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;"><i class="far fa-bell" style="color: #f97316; font-size: 1.5rem;"></i></div>
+                    <h3 style="margin: 0; color: white;">Waiting for orders...</h3>
+                    <p style="color: #9ca3af; font-size: 0.9rem; margin-top: 5px;">You are online. Orders will appear here.</p>
+                </div>
+
+                <div id="rider-pickup" style="display: none; padding: 20px;">
+                    <div class="job-card">
+                        <div class="job-icon-circle"><i class="fas fa-location-arrow"></i></div>
+                        <h2 style="color: var(--app-dark); margin: 0; font-size: 1.2rem;">READY FOR PICKUP</h2>
+                        <div style="color: var(--app-blue); font-weight: 600; font-size: 0.9rem; margin-top: 5px;">Pickup from Restaurant</div>
+                        <div class="info-block">
+                            <div style="display:flex; gap:10px;"><i class="fas fa-store" style="color:#64748b; margin-top:3px;"></i><div><span class="info-label">Restaurant</span><div class="info-val" id="rider-rest-name">...</div><div style="font-size:0.8rem; color:#64748b;">GIKI Campus Food Court</div></div></div>
+                        </div>
+                        <div class="info-block">
+                            <div style="display:flex; gap:10px;"><i class="fas fa-map-marker-alt" style="color:#64748b; margin-top:3px;"></i><div><span class="info-label">Deliver To</span><div class="info-val">Hostel 9, Room 204</div><div style="font-size:0.8rem; color:#ef4444;"><i class="fas fa-phone-alt"></i> +92 300 1234567</div></div></div>
+                        </div>
+                        <button class="action-btn-blue" onclick="riderPickedUp()">PICKED UP - START DELIVERY</button>
+                        <button class="action-btn-white">Open Maps</button>
+                    </div>
+                </div>
+
+                <div id="rider-route" style="display: none; padding: 20px;">
+                    <div class="route-card">
+                        <div class="route-icon-circle"><i class="fas fa-location-arrow"></i></div>
+                        <h2 style="color: var(--app-dark); margin: 0; font-size: 1.2rem;">ON ROUTE</h2>
+                        <div style="color: #c2410c; font-weight: 600; font-size: 0.9rem; margin-top: 5px;">Delivering to customer</div>
+                        <div class="info-block">
+                            <div style="display:flex; gap:10px;"><i class="fas fa-map-marker-alt" style="color:#ea580c; margin-top:3px;"></i><div style="flex:1;"><span class="info-label">Delivery Address</span><div class="info-val">Hostel 9, Room 204</div><div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;"><div><span class="info-label">Customer Contact</span><div style="font-size:0.9rem; color:#334155;">+92 300 1234567</div></div><button style="padding:5px 15px; border:1px solid #cbd5e1; background:white; border-radius:8px; cursor:pointer;"><i class="fas fa-phone-alt"></i> Call</button></div></div></div>
+                        </div>
+                        <div class="info-block">
+                            <div style="border-bottom:1px solid #f1f5f9; padding-bottom:10px; margin-bottom:10px;"><span class="info-label" style="font-weight:700; color:#94a3b8;">ORDER ITEMS</span><div style="margin-top:5px; font-size:0.9rem;" id="rider-order-items">...</div></div>
+                            <div style="display:flex; justify-content:space-between; font-weight:700; font-size:1.1rem; margin-bottom:10px;"><span>Total</span><span>Rs.<span id="rider-order-total">0</span></span></div>
+                            <div style="background:#fef9c3; border:1px solid #fde047; color:#854d0e; padding:10px; text-align:center; border-radius:10px; font-weight:600; font-size:0.9rem;"><i class="fas fa-money-bill-wave"></i> Collect Cash</div>
+                        </div>
+                        <button class="action-btn-green" onclick="finishDelivery()"> <i class="fas fa-check-circle"></i> MARK AS DELIVERED</button>
+                        <button class="action-btn-white"> <i class="fas fa-location-arrow"></i> Open Maps</button>
+                    </div>
+                </div>
+            </div>
+            <div id="rider-logout-container" style="position: absolute; bottom: 20px; left: 0; right: 0; text-align: center; padding: 0 20px;">
+                <button class="btn-logout-small" onclick="showScreen('screen-roles')" style="width: auto; padding: 8px 30px;">Log Out</button>
+            </div>
+        </div>
+
+        <!-- VENDOR DASHBOARD -->
+        <div id="screen-vendor-dashboard" class="screen">
+            <div style="background: var(--app-dark); padding: 40px 20px 20px; color: white;">
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                    <i class="fas fa-arrow-left" onclick="showScreen('screen-vendor-select')" style="cursor: pointer;"></i>
+                    <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-hamburger" id="vendor-dash-icon"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.7rem; opacity: 0.7;">Vendor Dashboard</div>
+                        <div style="font-size: 1.2rem; font-weight: 700;" id="vendor-dash-name">Raju</div>
+                    </div>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); padding: 10px 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.9rem; font-weight: 600;">Restaurant Status</span>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 0.8rem;">Open</span>
+                        <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; border-bottom: 1px solid #eee; background: white;">
+                <div class="vendor-tab active" onclick="switchVendorTab('orders')" id="tab-btn-orders">Orders</div>
+                <div class="vendor-tab" onclick="switchVendorTab('menu')" id="tab-btn-menu">Menu</div>
+                <div class="vendor-tab" onclick="switchVendorTab('inventory')" id="tab-btn-inventory">Inventory</div>
+            </div>
+
+            <!-- Vendor Orders View -->
+            <div id="vendor-view-orders" class="vendor-view" style="padding: 20px;">
+                <div id="vendor-no-orders" style="padding: 40px 20px; text-align: center;">
+                    <div style="width: 80px; height: 80px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; color: #94a3b8; font-size: 2rem;"><i class="far fa-clock"></i></div>
+                    <h3 style="color: var(--app-dark); margin: 0;">No Active Orders</h3>
+                    <p style="color: #94a3b8; font-size: 0.9rem;">New orders will appear here</p>
+                </div>
+                <div id="vendor-active-order-card" class="vendor-order-card" style="display: none;">
+                    <!-- Dynamic Content -->
+                </div>
+            </div>
+
+            <div id="vendor-view-menu" class="vendor-view" style="display: none; padding: 20px; background: #f8fafc;"></div>
+
+            <div id="vendor-view-inventory" class="vendor-view" style="display: none; padding: 20px;">
+                <h3 style="margin-top: 0; color: var(--app-dark);">Inventory Overview</h3>
+                <div style="display: flex; gap: 15px; margin-bottom: 25px;">
+                    <div style="flex: 1; background: #ecfdf5; border: 1px solid #d1fae5; padding: 15px; border-radius: 12px;">
+                        <div style="color: #10b981; font-size: 0.8rem; font-weight: 600; margin-bottom: 5px;"><i class="far fa-check-circle"></i> In Stock</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #065f46;">4</div>
+                    </div>
+                    <div style="flex: 1; background: #fef2f2; border: 1px solid #fee2e2; padding: 15px; border-radius: 12px;">
+                        <div style="color: #ef4444; font-size: 0.8rem; font-weight: 600; margin-bottom: 5px;"><i class="far fa-times-circle"></i> Out of Stock</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #991b1b;">0</div>
+                    </div>
+                </div>
+                <div style="font-weight: 600; margin-bottom: 10px; color: var(--app-dark);">Quick Actions</div>
+                <button class="btn-outline" style="width: 100%; text-align: left; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; padding: 12px;" onclick="vendorMarkAllAvailable()"><i class="far fa-check-circle"></i> Mark All Available</button>
+                <button class="btn-outline" style="width: 100%; text-align: left; margin-bottom: 25px; display: flex; align-items: center; gap: 10px; padding: 12px;" onclick="showToast('Add Item functionality TBD')"><i class="fas fa-plus"></i> Add New Item</button>
+                <div style="background: #fff7ed; border: 1px solid #ffedd5; padding: 20px; border-radius: 15px; text-align: center;">
+                    <div style="width: 40px; height: 40px; background: #ffedd5; color: var(--app-orange); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 1.2rem;">$</div>
+                    <div style="font-size: 0.9rem; font-weight: 600; color: var(--app-dark);">Today's Revenue</div>
+                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--app-orange);">Rs. 630</div>
+                    <div style="font-size: 0.8rem; color: #64748b;">1 orders completed</div>
+                </div>
+            </div>
+            <div style="padding: 20px; text-align: center; margin-top: auto;">
+                <button class="btn-logout-small" onclick="showScreen('screen-roles')" style="width: auto; padding: 8px 30px;">Log Out</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        /* === GLOBAL STATE MANAGEMENT === */
+        let appState = {
+            currentScreen: 'screen-os',
+            currentUserRole: null, 
+            currentVendor: null,
+            currentVendorTab: 'orders', // orders, menu, inventory
+            cart: [],
+            order: null, // { id, status, restaurant, total, items: [] } - ACTIVE ORDER
+            history: [] // ARRAY OF COMPLETED ORDERS
+        };
+        
+        // Initial historical order sample added to the history array
+        appState.history.push({
+            id: 849,
+            status: 'delivered',
+            restaurant: 'Ayan',
+            time: '02:33 AM',
+            total: 850,
+            items: [{name: 'Chicken Karahi', price: 850}]
+        });
+
+const menus = {
+            raju: {
+                name: "Raju", rating: 4.6, icon: "hamburger", color: "#f59e0b",
+                items: [
+                    { name: "Zinger Burger", desc: "Crispy chicken with spicy sauce", price: 350, img: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=150&h=150&fit=crop" },
+                    { name: "Club Sandwich", desc: "Triple-decker delight", price: 280, img: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=150&h=150&fit=crop" },
+                    { name: "Beef Burger", desc: "Juicy beef patty with cheese", price: 420, img: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=150&h=150&fit=crop" },
+                    { name: "Chicken Wrap", desc: "Grilled chicken with fresh veggies", price: 300, img: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=150&h=150&fit=crop" },
+                    { name: "Fries", desc: "Golden crispy fries", price: 150, img: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=150&h=150&fit=crop" }
+                ]
+            },
+            ayan: {
+                name: "Ayan", rating: 4.5, icon: "utensils", color: "#8b5cf6",
+                items: [
+                    { name: "Chicken Karahi", desc: "Traditional spicy chicken curry", price: 850, img: "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=150&h=150&fit=crop" },
+                    { name: "Biryani", desc: "Aromatic basmati rice with chicken", price: 400, img: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=150&h=150&fit=crop" },
+                    { name: "Seekh Kabab", desc: "Grilled minced meat skewers", price: 320, img: "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=150&h=150&fit=crop" },
+                    { name: "Naan", desc: "Freshly baked bread", price: 40, img: "https://images.unsplash.com/photo-1628840042765-356cda07504e?w=150&h=150&fit=crop" },
+                    { name: "Raita", desc: "Yogurt with herbs", price: 50, img: "https://images.unsplash.com/photo-1626074353765-517a681e40be?w=150&h=150&fit=crop" }
+                ]
+            },
+            hot: {
+                name: "Hot n Spicy", rating: 4.7, icon: "pepper-hot", color: "#ef4444",
+                items: [
+                    { name: "Spicy Wings", desc: "Extra hot buffalo wings", price: 450, img: "https://images.unsplash.com/photo-1527477396000-e27163b481c2?w=150&h=150&fit=crop" },
+                    { name: "Loaded Fries", desc: "Fries with cheese and jalapeños", price: 280, img: "https://images.unsplash.com/photo-1630431341973-02e1f662ec2c?w=150&h=150&fit=crop" },
+                    { name: "Hot Pizza", desc: "Spicy chicken with hot sauce", price: 950, img: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=150&h=150&fit=crop" },
+                    { name: "Garlic Bread", desc: "Toasted bread with garlic butter", price: 200, img: "https://images.unsplash.com/photo-1573140401552-3fab0b24f9e6?w=150&h=150&fit=crop" },
+                    { name: "Soda", desc: "Chilled soft drink", price: 80, img: "https://images.unsplash.com/photo-1581636625402-29b2a704ef13?w=150&h=150&fit=crop" }
+                ]
+            },
+            cafe: {
+                name: "Cafe", rating: 4.8, icon: "coffee", color: "#78350f",
+                items: [
+                    { name: "Espresso", desc: "Strong Italian coffee", price: 120, img: "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=150&h=150&fit=crop" },
+                    { name: "Cappuccino", desc: "Creamy coffee with foam", price: 180, img: "https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=150&h=150&fit=crop" },
+                    { name: "Croissant", desc: "Buttery French pastry", price: 150, img: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=150&h=150&fit=crop" },
+                    { name: "Blueberry Muffin", desc: "Freshly baked muffin", price: 130, img: "https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=150&h=150&fit=crop" },
+                    { name: "Tea", desc: "Hot brewed tea", price: 60, img: "https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=150&h=150&fit=crop" }
+                ]
+            }
+        };
+
+        // Initialize
+        function init() {
+            renderCurrentScreen();
+        }
+
+        /* === NAVIGATION & ROUTING === */
+        function showScreen(screenId) {
+            appState.currentScreen = screenId;
+            
+            // Toggle User Nav Visibility
+            const nav = document.getElementById('user-nav');
+            const userScreens = ['screen-user-home', 'screen-user-menu', 'screen-user-track', 'screen-user-history', 'screen-user-profile'];
+            nav.style.display = userScreens.includes(screenId) ? 'flex' : 'none';
+
+            // Update Nav Icons Active State
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            if(screenId === 'screen-user-home') document.querySelectorAll('.nav-item')[0].classList.add('active');
+            if(screenId === 'screen-user-track') document.querySelectorAll('.nav-item')[1].classList.add('active');
+            if(screenId === 'screen-user-history') document.querySelectorAll('.nav-item')[2].classList.add('active');
+            if(screenId === 'screen-user-profile') document.querySelectorAll('.nav-item')[3].classList.add('active');
+
+            renderCurrentScreen();
+        }
+        
+        function launchApp() { showScreen('screen-splash'); setTimeout(() => showScreen('screen-roles'), 1500); }
+        
+        function prepareLogin(role, vendorName = null) {
+            appState.currentUserRole = role;
+            appState.currentVendor = vendorName;
+            document.getElementById('login-title').innerText = role === 'vendor' ? `${vendorName} Login` : (role === 'delivery' ? 'Rider Login' : 'Student Login');
+            showScreen('screen-login');
+        }
+
+        function completeLogin() {
+            if(appState.currentUserRole === 'user') showScreen('screen-user-home');
+            else if(appState.currentUserRole === 'vendor') showScreen('screen-vendor-dashboard');
+            else if(appState.currentUserRole === 'delivery') showScreen('screen-delivery');
+        }
+
+        /* === CORE RENDER FUNCTION === */
+        function renderCurrentScreen() {
+            // Hide all active screens first
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            const activeScreen = document.getElementById(appState.currentScreen);
+            if(activeScreen) activeScreen.classList.add('active');
+
+            // Render specific logic based on active screen
+            if(appState.currentScreen === 'screen-user-home') renderUserHome();
+            if(appState.currentScreen === 'screen-user-track') renderTracking();
+            if(appState.currentScreen === 'screen-vendor-dashboard') renderVendorDash();
+            if(appState.currentScreen === 'screen-delivery') renderRiderDash();
+            if(appState.currentScreen === 'screen-user-history') renderHistory();
+        }
+
+        /* === USER LOGIC === */
+        function openMenu(key) {
+            window.activeMenuKey = key;
+            const data = menus[key];
+            document.getElementById('menu-title-text').innerText = data.name;
+            document.getElementById('menu-banner-icon').innerHTML = `<i class="fas fa-${data.icon}" style="color:${data.color}"></i>`;
+            
+            const container = document.getElementById('menu-items-container');
+            container.innerHTML = data.items.map(item => `
+                <div class="menu-item">
+                    <img src="${item.img}" class="menu-item-img">
+                    <div style="flex:1;">
+                        <div style="font-weight:700; font-size:0.9rem;">${item.name}</div>
+                        <div style="font-size:0.7rem; color:#64748b; margin-bottom:5px;">${item.desc}</div>
+                        <div style="font-weight:700;">Rs.${item.price}</div>
+                    </div>
+                    <button class="add-btn-outline" onclick="addToCart('${item.name}', ${item.price})">Add</button>
+                </div>
+            `).join('');
+            showScreen('screen-user-menu');
+        }
+
+        function addToCart(name, price) {
+            appState.cart.push({name, price});
+            document.getElementById('cart-badge').style.display = 'flex';
+            document.getElementById('cart-badge').innerText = appState.cart.length;
+            showToast(`${name} added to cart!`);
+        }
+
+        function showCart() {
+            const wrapper = document.getElementById('cart-items-wrapper');
+            let total = 0;
+            wrapper.innerHTML = appState.cart.map((item, index) => {
+                total += item.price;
+                return `
+                <div class="checkout-item-row">
+                    <span>1x &nbsp; ${item.name} <i class="fas fa-trash" style="color:#ef4444; font-size:0.8rem; margin-left:10px; cursor:pointer;" onclick="removeFromCart(${index})"></i></span>
+                    <span style="font-weight:600;">Rs.${item.price}</span>
+                </div>
+                `;
+            }).join('');
+            
+            if(appState.cart.length === 0) {
+                wrapper.innerHTML = "<div style='text-align:center;color:#94a3b8;margin:20px;'>Your cart is empty</div>";
+            }
+            
+            let finalTotal = total + (appState.cart.length > 0 ? 50 : 0);
+            document.getElementById('cart-subtotal').innerText = "Rs. " + total;
+            document.getElementById('cart-total-final').innerText = "Rs. " + finalTotal;
+            document.getElementById('checkout-btn-total').innerText = "Rs. " + finalTotal;
+            showScreen('screen-user-cart');
+        }
+
+        function removeFromCart(index) {
+            appState.cart.splice(index, 1);
+            showCart(); 
+        }
+
+        function placeOrder() {
+            if(appState.cart.length === 0) return showToast("Cart is empty!");
+            
+            const total = appState.cart.reduce((a,b) => a + b.price, 0) + 50;
+            const restKey = window.activeMenuKey || 'raju';
+            const restName = menus[restKey].name;
+            const date = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+            appState.order = {
+                id: Math.floor(Math.random() * 900) + 100,
+                status: 'placed', // placed, preparing, ready, picked_up, delivered
+                restaurant: restName,
+                total: total,
+                time: date,
+                items: [...appState.cart]
+            };
+            
+            appState.cart = []; // clear cart
+            document.getElementById('cart-badge').style.display = 'none';
+            showToast('Order Placed Successfully!');
+            showScreen('screen-user-track');
+        }
+
+        function cancelOrder() {
+            appState.order = null;
+            showToast('Order Cancelled');
+            showScreen('screen-user-home');
+        }
+        
+        // Function to archive the completed order and go home
+        function finishOrderAndGoHome() {
+            if (appState.order && appState.order.status === 'delivered') {
+                // Archive the order
+                appState.history.unshift({...appState.order, isReorderable: true}); // Add to the start of history
+                appState.order = null; // Clear active order
+            }
+            showScreen('screen-user-home');
+        }
+
+        // Renders the User Home Screen elements
+        function renderUserHome() {
+            const banner = document.getElementById('user-active-order-banner');
+            if(appState.order && appState.order.status !== 'delivered') {
+                banner.style.display = 'flex';
+                document.getElementById('home-banner-status').innerText = capitalize(appState.order.status.replace('_', ' '));
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+
+        // Renders the Order History Screen
+        function renderHistory() {
+            const historyList = document.getElementById('history-list');
+            
+            if (appState.history.length === 0) {
+                 historyList.innerHTML = `<div style="text-align:center; padding:30px; color:#94a3b8;">No past orders yet.</div>`;
+                 return;
+            }
+
+            historyList.innerHTML = appState.history.map(order => {
+                const itemString = order.items.map(i => i.name).join(", ");
+                const statusBadge = order.status === 'delivered' ? 
+                    `<span style="background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:6px; font-size:0.7rem; font-weight:600;">Delivered</span>` : 
+                    `<span style="background:#ffedd5; color:#c2410c; padding:2px 8px; border-radius:6px; font-size:0.7rem; font-weight:600;">Active</span>`;
+
+                return `
+                    <div class="history-card">
+                        <div class="history-header">
+                            <div class="history-number">#${order.id}</div>
+                            <div style="display:flex; gap:5px;">
+                                <span style="background:#ffedd5; color:#c2410c; padding:2px 8px; border-radius:6px; font-size:0.7rem; font-weight:600;">App</span>
+                                ${statusBadge}
+                            </div>
+                        </div>
+                        <div class="history-rest">${order.restaurant}</div>
+                        <div class="history-items" style="margin-bottom:5px;">${itemString}</div>
+                        <div class="history-meta" style="margin-bottom:15px;">${order.time} • Rs.${order.total}</div>
+                        <div style="display:flex; gap:10px;">
+                            ${order.status !== 'delivered' ? 
+                                `<button style="flex:1; background:var(--app-dark); color:white; border:none; padding:10px; border-radius:8px; font-size:0.9rem; font-weight:600; cursor:pointer;" onclick="showScreen('screen-user-track')"><i class="fas fa-map-marker-alt"></i> Tracking</button>` : 
+                                `<button style="flex:1; background:white; border:1px solid #e2e8f0; color:var(--app-dark); padding:10px; border-radius:8px; font-size:0.9rem; font-weight:600; cursor:pointer;" onclick="addToCart('${order.items[0].name}', ${order.items[0].price})">Reorder</button>`
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        /* === TRACKING LOGIC (Fixed Styles) === */
+        function renderTracking() {
+            if(!appState.order) {
+                // If no active order, go back home
+                showScreen('screen-user-home');
+                return;
+            }
+            const status = appState.order.status;
+            document.getElementById('tracking-text-status').innerText = `Status: ${capitalize(status.replace('_', ' '))}`;
+            document.getElementById('track-rest-name').innerText = appState.order.restaurant;
+            
+            // Render Items
+            const itemStr = appState.order.items.map(i => i.name).join(', ');
+            document.getElementById('track-order-items').innerText = itemStr;
+            document.getElementById('track-order-total').innerText = `Rs. ${appState.order.total}`;
+
+            // --- DELIVERED STATE LOGIC ---
+            const banner = document.getElementById('track-banner');
+            const label = document.getElementById('track-est-label');
+            const time = document.getElementById('track-est-time');
+            const cancelBtn = document.getElementById('btn-cancel-order');
+            const homeBtn = document.getElementById('btn-home-order');
+
+            if(status === 'delivered') {
+                banner.style.background = '#10b981'; // Green
+                label.innerText = "Order Complete";
+                time.innerText = "Arrived";
+                cancelBtn.style.display = 'none'; // Hide cancel
+                homeBtn.style.display = 'inline-block'; // Show home button
+            } else {
+                banner.style.background = '#E85025'; // Orange
+                label.innerText = "Estimated Arrival";
+                time.innerText = "20-25 min";
+                cancelBtn.style.display = 'inline-block';
+                homeBtn.style.display = 'none';
+            }
+            // -----------------------------
+
+            const steps = ['placed', 'preparing', 'ready', 'picked_up', 'delivered'];
+            const currentIndex = steps.indexOf(status);
+            
+            // Calculate width: (Current Step Index / Total Segments) * 100
+            // We have 4 segments between 5 steps.
+            const totalSegments = steps.length - 1; 
+            const fillPercent = (currentIndex / totalSegments) * 100;
+            
+            document.getElementById('track-line-fill').style.width = `${fillPercent}%`;
+
+            steps.forEach((step, index) => {
+                const el = document.getElementById(`step-${step}`);
+                // Reset classes
+                el.classList.remove('active', 'current');
+                
+                // Logic: 
+                // Active = Steps already passed OR current step
+                // Current = The exact step we are on (for pulsing effect)
+                
+                if(index <= currentIndex) {
+                    el.classList.add('active'); 
+                }
+                
+                if(index === currentIndex) {
+                    el.classList.add('current');
+                }
+            });
+        }
+
+        /* === VENDOR LOGIC === */
+        function switchVendorTab(tab) {
+            appState.currentVendorTab = tab;
+            renderVendorDash();
+        }
+        
+        function vendorMarkAllAvailable() {
+            // Get the current vendor's key
+            const vendorKey = Object.keys(menus).find(k => menus[k].name === appState.currentVendor);
+            
+            if (vendorKey) {
+                // In a real application, this would update the backend database
+                // Here, we just simulate success and show a toast
+                showToast(`All ${appState.currentVendor} items marked 'In Stock'`);
+                
+                // Optionally, we could manually change the inventory state here 
+                // if we tracked it explicitly. Since we don't, we simulate success.
+            } else {
+                showToast("Error: Could not find vendor menu.");
+            }
+            
+            // Re-render the inventory view to refresh visual indicators (if any existed)
+            renderVendorDash(); 
+        }
+
+        function renderVendorDash() {
+            document.getElementById('vendor-dash-name').innerText = appState.currentVendor;
+
+            // Handle Tabs UI
+            document.querySelectorAll('.vendor-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-btn-${appState.currentVendorTab}`).classList.add('active');
+            
+            document.querySelectorAll('.vendor-view').forEach(v => v.style.display = 'none');
+            document.getElementById(`vendor-view-${appState.currentVendorTab}`).style.display = 'block';
+
+            // Only render orders if tab is active
+            if(appState.currentVendorTab === 'orders') {
+                const card = document.getElementById('vendor-active-order-card');
+                const noOrder = document.getElementById('vendor-no-orders');
+
+                // Check if there is an active order for this vendor
+                if(appState.order && appState.order.restaurant === appState.currentVendor && ['placed', 'preparing', 'ready'].includes(appState.order.status)) {
+                    noOrder.style.display = 'none';
+                    card.style.display = 'block';
+                    
+                    let statusBadge = '';
+                    let actionBtn = '';
+
+                    if(appState.order.status === 'placed') {
+                        statusBadge = '<span class="order-pill-placed">placed</span>';
+                        actionBtn = `<button class="vendor-action-btn btn-green-solid" onclick="updateOrderStatus('preparing')"><i class="far fa-check-circle"></i> Accept Order</button>`;
+                    } else if (appState.order.status === 'preparing') {
+                        statusBadge = '<span class="order-pill-preparing">preparing</span>';
+                        actionBtn = `<button class="vendor-action-btn btn-blue-solid" onclick="updateOrderStatus('ready')"><i class="fas fa-box"></i> Mark as Ready</button>`;
+                    } else {
+                        statusBadge = '<span class="order-pill-ready">ready</span>';
+                        actionBtn = `<div style="text-align:center; padding:10px; color:#64748b; font-size:0.9rem;">Waiting for Rider...</div>`;
+                    }
+
+                    const itemString = appState.order.items.map(i => `1x ${i.name}`).join("<br>");
+
+                    card.innerHTML = `
+                        <div class="vendor-order-header">
+                            <div style="font-weight:700; font-size:1.1rem;">Order #${appState.order.id}</div>
+                            ${statusBadge}
+                        </div>
+                        <div style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">${appState.order.time} <br> <i class="fas fa-map-marker-alt"></i> Hostel 9, Room 204</div>
+                        <div style="border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9; padding:10px 0; margin-bottom:10px; font-size:0.9rem;">
+                            ${itemString}
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-weight:700; margin-bottom:15px;">
+                            <span>Total</span> <span>Rs.${appState.order.total}</span>
+                        </div>
+                        ${actionBtn}
+                    `;
+                } else {
+                    noOrder.style.display = 'block';
+                    card.style.display = 'none';
+                }
+            }
+            
+            // Render Menu (Mock Data for selected vendor)
+            if(appState.currentVendorTab === 'menu') {
+                const vendorKey = Object.keys(menus).find(k => menus[k].name === appState.currentVendor);
+                const data = menus[vendorKey || 'raju'];
+                const menuList = document.getElementById('vendor-view-menu');
+                menuList.innerHTML = data.items.map(item => `
+                    <div class="vendor-item-card">
+                        <img src="${item.img}" style="width:50px; height:50px; border-radius:10px; object-fit:cover;">
+                        <div style="flex:1;">
+                            <div style="font-weight:700; color:var(--app-dark);">${item.name}</div>
+                            <div style="color:var(--app-orange); font-weight:600; font-size:0.9rem;">Rs.${item.price}</div>
+                        </div>
+                        <label class="switch" style="transform:scale(0.8); margin:0;"><input type="checkbox" checked><span class="slider"></span></label>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function vendorAcceptOrder() {
+            updateOrderStatus('preparing');
+        }
+
+        function vendorMarkReady() {
+            updateOrderStatus('ready');
+        }
+
+        /* === RIDER LOGIC === */
+        function renderRiderDash() {
+            const idle = document.getElementById('rider-idle');
+            const pickup = document.getElementById('rider-pickup');
+            const delivery = document.getElementById('rider-route'); // Fixed ID reference
+
+            // Reset all
+            idle.style.display = 'none';
+            pickup.style.display = 'none';
+            delivery.style.display = 'none';
+            
+            // Check state
+            if(!appState.order || ['placed', 'preparing', 'delivered'].includes(appState.order.status)) {
+                idle.style.display = 'flex';
+                // If delivered, we technically go back to idle
+            }
+            else if (appState.order.status === 'ready') {
+                pickup.style.display = 'block';
+                document.getElementById('rider-rest-name').innerText = appState.order.restaurant;
+            } 
+            else if (appState.order.status === 'picked_up') {
+                delivery.style.display = 'block';
+                document.getElementById('rider-order-items').innerHTML = appState.order.items.map(i => `1x ${i.name}`).join("<br>");
+                document.getElementById('rider-order-total').innerText = appState.order.total;
+                // Removed rider-cash-amt as it was causing issues or missing from HTML in some versions
+            }
+        }
+
+        function riderPickedUp() {
+            updateOrderStatus('picked_up');
+        }
+
+        function finishDelivery() {
+            updateOrderStatus('delivered');
+        }
+
+        /* === UTILS (Instant Sync Logic) === */
+        function updateOrderStatus(newStatus) {
+            if(appState.order) {
+                appState.order.status = newStatus;
+                
+                // Logic to provide feedback
+                if(newStatus === 'preparing') {
+                     showToast("Order Accepted! Preparing food...");
+                } else if(newStatus === 'ready') {
+                     showToast("Order Ready! Notifying Rider...");
+                } else if(newStatus === 'picked_up') {
+                     showToast("Rider has picked up the order!");
+                } else if(newStatus === 'delivered') {
+                     showToast("Order Delivered! Enjoy your meal.");
+                } else {
+                     showToast(`Status updated: ${newStatus}`);
+                }
+
+                // Force Re-render of ALL screens to ensure sync
+                renderCurrentScreen(); 
+            }
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerHTML = `<i class="fas fa-info-circle"></i> ${msg}`;
+            t.className = "toast show";
+            setTimeout(() => t.className = "toast", 3000);
+        }
+
+        function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+        
+        function selectPayment(element) {
+            document.querySelectorAll('.payment-option').forEach(el => {
+                el.classList.remove('selected');
+                const icon = el.querySelector('.fa-dot-circle, .fa-circle');
+                if(icon) { icon.className = "far fa-circle"; icon.style.color = "#cbd5e1"; }
+            });
+            element.classList.add('selected');
+            const icon = element.querySelector('.fa-circle');
+            if(icon) { icon.className = "fas fa-dot-circle"; icon.style.color = "var(--app-dark)"; }
+        }
+
+        // Boot
+        init();
+
+        /* === NAVIGATION & ROUTING === */
+        function showScreen(screenId) {
+            appState.currentScreen = screenId;
+            
+            // Toggle User Nav Visibility
+            const nav = document.getElementById('user-nav');
+            // REMOVED 'screen-user-cart' from this list to hide nav bar during checkout
+            const userScreens = ['screen-user-home', 'screen-user-menu', 'screen-user-track', 'screen-user-history', 'screen-user-profile'];
+            nav.style.display = userScreens.includes(screenId) ? 'flex' : 'none';
+
+            // Update Nav Icons Active State
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            if(screenId === 'screen-user-home') document.querySelectorAll('.nav-item')[0].classList.add('active');
+            if(screenId === 'screen-user-track') document.querySelectorAll('.nav-item')[1].classList.add('active');
+            if(screenId === 'screen-user-history') document.querySelectorAll('.nav-item')[2].classList.add('active');
+            if(screenId === 'screen-user-profile') document.querySelectorAll('.nav-item')[3].classList.add('active');
+
+            renderCurrentScreen();
+        }
+
+    </script>
+</body>
+</html>
